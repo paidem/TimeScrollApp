@@ -18,7 +18,7 @@ extension AppDelegate {
         let hosting = NSHostingController(rootView: root)
         let win = NSWindow(contentViewController: hosting)
         win.styleMask.insert([.titled, .closable, .miniaturizable, .resizable])
-        win.title = "TimeScroll"
+        win.title = "TimeScroll+"
         win.setContentSize(NSSize(width: 1000, height: 700))
         win.contentMinSize = NSSize(width: 1000, height: 700)
         win.identifier = NSUserInterfaceItemIdentifier("MainWindow")

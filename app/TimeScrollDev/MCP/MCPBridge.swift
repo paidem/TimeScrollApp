@@ -4,8 +4,8 @@ import Foundation
 /// carries one newline-terminated JSON request and one newline-terminated JSON response over a
 /// Unix-domain socket that only the current user can open.
 enum MCPBridge {
-    static let helperBundleIdentifier = "com.muzhen.TimeScroll.mcp"
-    static let appBundleIdentifier = "com.muzhen.TimeScroll"
+    static let helperBundleIdentifier = "com.paidem.TimeScroll.mcp"
+    static let appBundleIdentifier = "com.paidem.TimeScroll"
     private static let maxMessageBytes = 64 * 1024 * 1024
 
     static var socketURL: URL {
