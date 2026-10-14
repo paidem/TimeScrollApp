@@ -32,6 +32,15 @@ extension AppDelegate {
             #endif
         }
         let t2 = nc.addObserver(forName: .TimeScrollCheckForUpdates, object: nil, queue: .main) { [weak self] _ in
+            guard AppDelegate.updatesEnabled else {
+                let alert = NSAlert()
+                alert.alertStyle = .informational
+                alert.messageText = "Updates Disabled"
+                alert.informativeText = "This is a fork build without its own update feed. Download new versions from the fork's GitHub releases."
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+                return
+            }
             #if canImport(Sparkle)
             print("[Sparkle] Notification received: TimeScrollCheckForUpdates")
             Task { @MainActor in
