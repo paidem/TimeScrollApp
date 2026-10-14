@@ -38,6 +38,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var updatesDelegate: UpdatesDelegate!
     #endif
 
+    /// Fork builds have no update feed of their own. The upstream feed (and the EdDSA key in
+    /// Info.plist) would offer the official build and install it over this one, so the updater
+    /// is never started. Re-enable once the fork publishes its own appcast and key.
+    static let updatesEnabled = false
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("[App] applicationDidFinishLaunching")
         let bundleId = Bundle.main.bundleIdentifier ?? "(nil)"
@@ -52,15 +57,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #if canImport(Sparkle)
         updatesDelegate = UpdatesDelegate()
         updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
+            startingUpdater: Self.updatesEnabled,
             updaterDelegate: updatesDelegate,
             userDriverDelegate: nil
         )
-        print("[Sparkle] SPUStandardUpdaterController initialized")
+        print("[Sparkle] SPUStandardUpdaterController initialized (started=\(Self.updatesEnabled))")
         applySparklePrefsFromSettings()
         // Optional: initial background check shortly after launch
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-            guard let self else { return }
+            guard let self, Self.updatesEnabled else { return }
             if SettingsStore.sharedEnableAutoCheckUpdatesSnapshot() {
                 updaterController.updater.checkForUpdatesInBackground()
                 print("[Sparkle] Scheduled initial background update check")

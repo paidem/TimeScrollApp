@@ -82,9 +82,11 @@ extension AppDelegate {
         menu.addItem(prefs)
 
         // Check for Updates…
-        let updates = NSMenuItem(title: "Check for Updates…", action: #selector(onMenuCheckForUpdates(_:)), keyEquivalent: "")
-        updates.target = self
-        menu.addItem(updates)
+        if Self.updatesEnabled {
+            let updates = NSMenuItem(title: "Check for Updates…", action: #selector(onMenuCheckForUpdates(_:)), keyEquivalent: "")
+            updates.target = self
+            menu.addItem(updates)
+        }
 
         if SettingsStore.shared.vaultEnabled {
             menu.addItem(.separator())
