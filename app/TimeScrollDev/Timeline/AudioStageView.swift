@@ -323,7 +323,7 @@ private struct AudioFloatingOverlay: View {
     private var navigationPill: some View {
         HStack(spacing: 2) {
             Button(action: { model.prev() }) { Image(systemName: "chevron.left") }
-                .disabled(!(model.selectedIndex + 1 < model.metas.count))
+                .disabled(!model.canStepBack)
                 .help("Previous snapshot")
                 .accessibilityLabel("Previous snapshot")
 
@@ -333,7 +333,7 @@ private struct AudioFloatingOverlay: View {
                 .padding(.horizontal, 6)
 
             Button(action: { model.next() }) { Image(systemName: "chevron.right") }
-                .disabled(!(model.selectedIndex - 1 >= 0))
+                .disabled(!model.canStepForward)
                 .help("Next snapshot")
                 .accessibilityLabel("Next snapshot")
         }

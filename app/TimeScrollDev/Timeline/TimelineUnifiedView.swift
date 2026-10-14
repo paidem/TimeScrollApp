@@ -215,7 +215,10 @@ struct TimelineUnifiedView: View {
             return
         }
 
-        if !model.refreshNewest() {
+        // Live follow in day mode rolls over to today (e.g. after midnight).
+        if model.dayMode, model.followLatest, !Calendar.current.isDateInToday(model.day) {
+            model.showDay(Date())
+        } else if !model.refreshNewest() {
             model.load()
         }
         if model.followLatest {
@@ -328,7 +331,23 @@ struct TimelineUnifiedView: View {
             }
 
             TimelineToolbarSection {
-                Button(action: { model.msPerPoint = min(maxMsPerPt, model.msPerPoint * zoomStep) }) {
+                Picker("Timeline", selection: Binding(get: { model.dayMode }, set: { model.setDayMode($0) })) {
+                    Text("Continuous").tag(false)
+                    Text("Day").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .help("Continuous timeline, or one day at a time")
+
+                if model.dayMode {
+                    TimelineDayNavigator(model: model)
+                }
+            }
+            .fixedSize(horizontal: true, vertical: false)
+
+            TimelineToolbarSection {
+                Button(action: { zoom(by: 1 / zoomStep) }) {
                     Image(systemName: "minus")
                 }
                 .buttonStyle(.bordered)
@@ -336,21 +355,28 @@ struct TimelineUnifiedView: View {
                 .accessibilityLabel("Zoom out")
 
                 Slider(value: Binding(get: {
+                    if model.dayMode {
+                        return log(model.dayZoom) / log(TimelineModel.maxDayZoom)
+                    }
                     let clamped = min(max(model.msPerPoint, minMsPerPt), maxMsPerPt)
                     let logMin = log(minMsPerPt)
                     let logMax = log(maxMsPerPt)
                     let logVal = log(clamped)
                     return (logMax - logVal) / (logMax - logMin)
                 }, set: { value in
+                    if model.dayMode {
+                        model.dayZoom = exp(value * log(TimelineModel.maxDayZoom))
+                        return
+                    }
                     let logMin = log(minMsPerPt)
                     let logMax = log(maxMsPerPt)
                     let logVal = logMax - value * (logMax - logMin)
                     let msPerPoint = exp(logVal)
                     model.msPerPoint = min(max(msPerPoint, minMsPerPt), maxMsPerPt)
                 }))
-                .frame(width: 140)
+                .frame(width: model.dayMode ? 100 : 140)
 
-                Button(action: { model.msPerPoint = max(minMsPerPt, model.msPerPoint / zoomStep) }) {
+                Button(action: { zoom(by: zoomStep) }) {
                     Image(systemName: "plus")
                 }
                 .buttonStyle(.bordered)
@@ -736,10 +762,10 @@ struct TimelineUnifiedView: View {
                 }
             }
             switch event.keyCode {
-            case 123: // left
-                if model.selectedIndex + 1 < model.metas.count { model.prev(); return nil }
+            case 123: // left (in day mode, past the first snapshot moves to the previous day)
+                if model.canStepBack { model.prev(); return nil }
             case 124: // right
-                if model.selectedIndex - 1 >= 0 { model.next(); return nil }
+                if model.canStepForward { model.next(); return nil }
             case 51, 117: // delete, forward delete
                 if let sel = model.selected {
                     let alert = NSAlert()
@@ -765,7 +791,20 @@ struct TimelineUnifiedView: View {
         keyMonitor = nil
     }
 
+    /// `factor` > 1 zooms in. Day mode zooms relative to the fitted day; continuous mode changes ms per point.
+    private func zoom(by factor: Double) {
+        if model.dayMode {
+            model.dayZoom = min(max(model.dayZoom * factor, 1), TimelineModel.maxDayZoom)
+        } else {
+            model.msPerPoint = min(max(model.msPerPoint / factor, minMsPerPt), maxMsPerPt)
+        }
+    }
+
     private func jumpToEnd() {
+        if model.dayMode, !Calendar.current.isDateInToday(model.day) {
+            model.showDay(Date())
+            return
+        }
         if model.isAnchoredWindow { model.load() }
         if !model.metas.isEmpty { model.selectedIndex = 0 }
         model.jumpToEndToken &+= 1
