@@ -1,5 +1,5 @@
 #!/opt/homebrew/bin/bash
-# Build, sign (Developer ID), notarize and staple TimeScroll+, producing dist/TimeScroll+-<tag>.zip.
+# Build, sign (Developer ID), notarize and staple TimeScroll+, producing dist/TimeScroll+-<tag>.{zip,dmg}.
 # Publishing the GitHub release is a separate, explicit step (printed at the end).
 #
 # Requirements:
@@ -71,9 +71,24 @@ xcrun stapler staple "$APP"
 spctl --assess --type execute --verbose=2 "$APP"
 
 ditto -c -k --keepParent "$APP" "$ZIP"
-shasum -a 256 "$ZIP"
+
+echo "==> Building DMG (drag-to-Applications)"
+DMG="$ROOT/dist/${APP_NAME}-${TAG}.dmg"
+STAGE="$WORK/dmg"
+mkdir -p "$STAGE"
+ditto "$APP" "$STAGE/${APP_NAME}.app"
+ln -s /Applications "$STAGE/Applications"
+rm -f "$DMG"
+hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -format UDZO "$DMG" >/dev/null
+codesign --sign "Developer ID Application" --timestamp "$DMG"
+xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+xcrun stapler staple "$DMG"
+spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
+
+shasum -a 256 "$ZIP" "$DMG"
 echo
 echo "Built $ZIP"
+echo "Built $DMG"
 echo "Publish with:"
 echo "  git tag $TAG && git push origin $TAG"
-echo "  gh release create $TAG '$ZIP' --repo paidem/TimeScrollApp --title '$APP_NAME $marketing (fork build $fork_build)' --notes-file <notes.md>"
+echo "  gh release create $TAG '$DMG' '$ZIP' --repo paidem/TimeScrollApp --title '$APP_NAME $marketing (fork build $fork_build)' --notes-file <notes.md>"
