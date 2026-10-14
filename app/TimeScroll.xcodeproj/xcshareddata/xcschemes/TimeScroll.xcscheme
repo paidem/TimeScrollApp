@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "C4681DB22E7C2717004C20D3"
-               BuildableName = "TimeScroll.app"
+               BuildableName = "TimeScroll+.app"
                BlueprintName = "TimeScroll"
                ReferencedContainer = "container:TimeScroll.xcodeproj">
             </BuildableReference>
@@ -95,7 +95,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "C4681DB22E7C2717004C20D3"
-            BuildableName = "TimeScroll.app"
+            BuildableName = "TimeScroll+.app"
             BlueprintName = "TimeScroll"
             ReferencedContainer = "container:TimeScroll.xcodeproj">
          </BuildableReference>
@@ -112,7 +112,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "C4681DB22E7C2717004C20D3"
-            BuildableName = "TimeScroll.app"
+            BuildableName = "TimeScroll+.app"
             BlueprintName = "TimeScroll"
             ReferencedContainer = "container:TimeScroll.xcodeproj">
          </BuildableReference>
