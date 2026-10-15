@@ -16,9 +16,14 @@ changes is in the git history of the `improvements` branch.
 
 Timeline
 - Per-day mode: one day at a time, fitted to the window, with a day navigator and calendar
-- Drag to scrub through snapshots; pinch to zoom
+- Drag to scrub through snapshots; pinch, or Option/Command + scroll, to zoom
 - Tick labels no longer overlap; dates shown only where the day changes
 - Filters (apps, media, dates) apply to the timeline live; dates are optional
+
+Capture
+- "Active display" mode (default): records whichever display holds the frontmost window, so the
+  timeline follows you between monitors
+- "First display" is now "Main display" and always means the display with the menu bar
 
 Fixes
 - Quitting could hang forever, and capture could silently stop, when OCR got stuck
