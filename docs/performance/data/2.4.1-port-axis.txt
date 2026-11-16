@@ -1,0 +1,5 @@
+baseline day=False: ms/layout= 0.32073974609375 checksum= 153331.9999998918
+ported day=False: ms/layout= 0.37243008613586426 checksum= 153331.9999998918
+ported day=True: ms/layout= 0.4669308662414551 checksum= 100000.0
+previous day: median ms/query=0.002667; plan=[(4, 0, 196, 'SEARCH ts_snapshot USING COVERING INDEX timestamp_idx (started_at_ms<?)')]
+next day: median ms/query=0.002458; plan=[(4, 0, 196, 'SEARCH ts_snapshot USING COVERING INDEX timestamp_idx (started_at_ms>?)')]

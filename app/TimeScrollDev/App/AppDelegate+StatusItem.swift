@@ -143,7 +143,7 @@ extension AppDelegate {
     @objc func toggleCapture() {
         Task { @MainActor in
             let state = AppState.shared
-            if state.isCapturing || state.isCaptureStarting {
+            if state.isCaptureWanted {
                 await state.stopCaptureIfNeeded()
             } else {
                 await state.startCaptureIfNeeded()
@@ -168,6 +168,7 @@ extension AppDelegate {
             || state.microphoneCaptureStatus.errorMessage != nil
             || state.systemAudioCaptureStatus.errorMessage != nil
         guard state.isCapturing else {
+            if state.isCaptureRecovering { return "Capture: Off — retrying" }
             return hasSourceError ? "Capture: Off — source issue" : "Capture: Off"
         }
         if state.microphoneCaptureStatus == .pausedForVault
@@ -181,7 +182,7 @@ extension AppDelegate {
     }
 
     func toggleCaptureTitle() -> String {
-        (AppState.shared.isCapturing || AppState.shared.isCaptureStarting) ? "Stop Capture" : "Start Capture"
+        AppState.shared.isCaptureWanted ? "Stop Capture" : "Start Capture"
     }
 
     func refreshMenu() {

@@ -1,4 +1,8 @@
-## TimeScroll app
+## TimeScroll+
+
+Unofficial fork of [TimeScroll](https://github.com/XInTheDark/TimeScrollApp), based on 2.4.1. Keeps per-day timeline navigation, live filters, Active display by default, persistent capture recovery and cached storage entitlement checks.
+
+Uses `com.paidem.TimeScroll` and retains existing TimeScroll+ storage/settings. Upstream automatic updates are disabled. Build signed releases with `scripts/release.sh`.
 
 [![Follow @muzhen_j on X](https://img.shields.io/twitter/follow/muzhen_j?style=social)](https://x.com/muzhen_j)
 

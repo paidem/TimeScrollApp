@@ -3,6 +3,7 @@ import Foundation
 extension TimelineModel {
   /// Shows the earliest capture of `day` (local time), with the timeline opened around it.
   func openDay(_ day: Date) {
+    if dayMode { followLatest = false; showDay(day); return }
     let calendar = Calendar.current
     let start = calendar.startOfDay(for: day)
     let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(86_400)

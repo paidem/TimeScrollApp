@@ -55,7 +55,7 @@ final class SettingsStore: ObservableObject {
             }
         }
     }
-    static let defaultDisplayCaptureMode: DisplayCaptureMode = .first
+    static let defaultDisplayCaptureMode: DisplayCaptureMode = .active
 
     /// Whether switching apps triggers capture: never, as an extra snapshot on top of the
     /// regular interval, or as the only time capture runs (for a short window after each switch).

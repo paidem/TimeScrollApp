@@ -159,8 +159,14 @@ enum StoragePaths {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
     }
 
-    static func canUseManagedAppGroupAccess() -> Bool {
+    /// The signature and entitlements of the running binary can't change while it runs,
+    /// so check once. Without caching, every storage path lookup re-evaluates the code
+    /// signature's certificate chain (dozens of SecTrust evaluations per captured frame).
+    private static let cachedCanUseManagedAppGroupAccess: Bool =
         hasValidTeamIdentifier() && hasManagedAppGroupEntitlement()
+
+    static func canUseManagedAppGroupAccess() -> Bool {
+        cachedCanUseManagedAppGroupAccess
     }
 
     static func hasManagedAppGroupEntitlement() -> Bool {

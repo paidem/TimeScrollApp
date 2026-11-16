@@ -310,7 +310,7 @@ private struct TimelineAxisLayout {
         let timesAsc = model.metas.map(\.startedAtMs).sorted()
         if model.dayMode {
             // Linear axis over the day's active hours; dayZoom 1 fits it exactly into the viewport.
-            let range = Self.activeHours(timesAsc: timesAsc, day: model.dayRangeMs)
+            let range = TimelineDayRange.activeHours(first: timesAsc.first, last: timesAsc.last, day: model.dayRangeMs)
             let span = Double(range.upperBound - range.lowerBound)
             let fitMsPerPoint = span / Double(max(1, viewportWidth))
             let msPerPoint = max(TimelineModel.minMsPerPoint, fitMsPerPoint / max(1, model.dayZoom))
@@ -341,15 +341,6 @@ private struct TimelineAxisLayout {
         self.isCompressed = isCompressed
         self.msPerPoint = msPerPoint
         self.timeRange = timeRange
-    }
-
-    /// The span between the day's first and last capture, rounded out to whole hours.
-    private static func activeHours(timesAsc: [Int64], day: ClosedRange<Int64>) -> ClosedRange<Int64> {
-        guard let first = timesAsc.first, let last = timesAsc.last else { return day }
-        let hour: Int64 = 3_600_000
-        let start = day.lowerBound + (first - day.lowerBound) / hour * hour
-        let end = min(day.upperBound + 1, day.lowerBound + ((last - day.lowerBound) / hour + 1) * hour)
-        return start...max(end, start + hour)
     }
 
     func x(for timeMs: Int64) -> CGFloat {
@@ -880,9 +871,13 @@ final class TimelineBarNSView: NSView {
                                                     range: TimelineModel.minMsPerPoint...TimelineModel.maxMsPerPoint)
         let leadingX = max(0, (clip.bounds.width - targetWidth) / 2)
         onJump?(session.startMs, .screen)
-        if abs(msPerPoint - model.msPerPoint) > 0.5 {
+        if abs(msPerPoint - layout.msPerPoint) > 0.5 {
             zoomAnchor = (session.startMs, leadingX)
-            model.msPerPoint = msPerPoint
+            if model.dayMode {
+                model.dayZoom = min(max(model.dayZoom * layout.msPerPoint / msPerPoint, 1), TimelineModel.maxDayZoom)
+            } else {
+                model.msPerPoint = msPerPoint
+            }
         } else if let scroll = enclosingScrollView {
             let targetX = max(0, min(bounds.width - clip.bounds.width, timelineX(for: session.startMs) - leadingX))
             clip.scroll(to: NSPoint(x: targetX, y: 0))

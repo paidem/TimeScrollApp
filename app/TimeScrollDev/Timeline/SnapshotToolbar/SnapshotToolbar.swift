@@ -61,7 +61,7 @@ struct SnapshotToolbar: View {
   private var navigation: some View {
     HStack(spacing: 2) {
       Button(action: { model.prev() }) { Image(systemName: "chevron.left") }
-        .disabled(!(model.selectedIndex + 1 < model.metas.count))
+        .disabled(!model.canStepBack)
         .help("Previous snapshot")
         .accessibilityLabel("Previous snapshot")
       TimelineDateButton(text: model.selected.map { Self.dateFormatter.string(from: Date(timeIntervalSince1970: TimeInterval($0.startedAtMs) / 1000)) } ?? "",
@@ -69,7 +69,7 @@ struct SnapshotToolbar: View {
                          calendar: model.dayCalendar)
         .padding(.horizontal, 6)
       Button(action: { model.next() }) { Image(systemName: "chevron.right") }
-        .disabled(!(model.selectedIndex - 1 >= 0))
+        .disabled(!model.canStepForward)
         .help("Next snapshot")
         .accessibilityLabel("Next snapshot")
     }

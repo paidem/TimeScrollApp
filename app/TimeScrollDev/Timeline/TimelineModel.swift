@@ -67,8 +67,7 @@ final class TimelineModel: ObservableObject {
 
     /// Inclusive millisecond bounds of `day`.
     var dayRangeMs: ClosedRange<Int64> {
-        let next = Calendar.current.date(byAdding: .day, value: 1, to: day) ?? day.addingTimeInterval(86_400)
-        return Int64(day.timeIntervalSince1970 * 1000)...(Int64(next.timeIntervalSince1970 * 1000) - 1)
+        TimelineDayRange.bounds(for: day)
     }
 
     init() {
@@ -96,7 +95,7 @@ final class TimelineModel: ObservableObject {
                 guard token == self.requestToken else { return }
                 self.activeQuery = q
                 self.isAnchoredWindow = false
-                self.hasMoreOlder = q.supportsPaging && list.count >= limit
+                self.hasMoreOlder = !self.dayMode && q.supportsPaging && list.count >= limit
                 self.metas = sorted
                 if let selecting {
                     switch selecting {
@@ -340,7 +339,8 @@ final class TimelineModel: ObservableObject {
             if isDayMode {
                 // Per-day mode shows the snapshot's whole day instead of a window around it.
                 DispatchQueue.main.async { [weak self] in
-                    self?.showDay(Date(timeIntervalSince1970: TimeInterval(anchorTime) / 1000), selecting: .id(id))
+                    guard let self, token == self.requestToken else { return }
+                    self.showDay(Date(timeIntervalSince1970: TimeInterval(anchorTime) / 1000), selecting: .id(id))
                 }
                 return
             }
@@ -398,12 +398,18 @@ final class TimelineModel: ObservableObject {
 
     /// Moves to the closest earlier (`delta < 0`) or later day that has snapshots.
     func stepDay(by delta: Int, selecting: Selection = .newest) {
+        followLatest = false
+        requestToken &+= 1
+        let token = requestToken
+        isLoading = true
         let range = dayRangeMs
         let from = delta < 0 ? range.lowerBound : range.upperBound + 1
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let time = (try? DB.shared.nearestSnapshotTime(from: from, forward: delta > 0)) ?? nil
             DispatchQueue.main.async { [weak self] in
-                guard let self, let time else { return }
+                guard let self, token == self.requestToken else { return }
+                self.isLoading = false
+                guard self.dayMode, let time else { return }
                 self.showDay(Date(timeIntervalSince1970: TimeInterval(time) / 1000), selecting: selecting)
             }
         }

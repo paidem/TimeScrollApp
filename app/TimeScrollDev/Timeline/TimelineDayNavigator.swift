@@ -16,6 +16,7 @@ struct TimelineDayNavigator: View {
             .popover(isPresented: $showCalendar, arrowEdge: .bottom) {
                 DatePicker("Day", selection: Binding(get: { model.day }, set: { date in
                     showCalendar = false
+                    model.followLatest = false
                     model.showDay(date)
                 }), in: ...Date(), displayedComponents: .date)
                 .datePickerStyle(.graphical)

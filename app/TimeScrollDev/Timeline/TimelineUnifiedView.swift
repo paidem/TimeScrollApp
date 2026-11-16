@@ -84,6 +84,7 @@ struct TimelineUnifiedView: View {
     var body: some View {
         VStack(spacing: 0) {
             topBar
+            TimelineDayControls(model: model)
             Divider()
             HStack(spacing: 0) {
                 centerStage
@@ -102,7 +103,7 @@ struct TimelineUnifiedView: View {
             // Clamp any previously persisted msPerPoint into the new, saner range
             model.msPerPoint = min(max(model.msPerPoint, minMsPerPt), maxMsPerPt)
         }
-        .onDisappear { removeKeyMonitor() }
+        .onDisappear { removeKeyMonitor(); filterReload?.cancel() }
         .focusedSceneObject(menuActions)
         .onChange(of: menuAvailability, initial: true) { _, availability in
             menuActions.availability = availability
@@ -237,11 +238,11 @@ struct TimelineUnifiedView: View {
             Button {
                 toggleCapture()
             } label: {
-                Label((appState.isCapturing || appState.isCaptureStarting) ? "Stop Capture" : "Start Capture",
-                      systemImage: (appState.isCapturing || appState.isCaptureStarting) ? "stop.circle.fill" : "record.circle.fill")
+                Label(appState.isCaptureWanted ? "Stop Capture" : "Start Capture",
+                      systemImage: appState.isCaptureWanted ? "stop.circle.fill" : "record.circle.fill")
             }
             .buttonStyle(.borderedProminent)
-            .tint((appState.isCapturing || appState.isCaptureStarting) ? .red : .accentColor)
+            .tint(appState.isCaptureWanted ? .red : .accentColor)
             .controlSize(.large)
 
             if settings.audioFeatureEnabled {
@@ -255,7 +256,7 @@ struct TimelineUnifiedView: View {
                 .help("Capture modes")
                 .accessibilityLabel("Capture modes")
                 .buttonStyle(.borderedProminent)
-                .tint((appState.isCapturing || appState.isCaptureStarting) ? .red : .accentColor)
+                .tint(appState.isCaptureWanted ? .red : .accentColor)
                 .controlSize(.large)
                 .popover(isPresented: $showCaptureModePopover, arrowEdge: .bottom) {
                     captureModePopover
@@ -333,22 +334,6 @@ struct TimelineUnifiedView: View {
                     .buttonStyle(.bordered)
                 }
             }
-
-            TimelineToolbarSection {
-                Picker("Timeline", selection: Binding(get: { model.dayMode }, set: { model.setDayMode($0) })) {
-                    Text("Continuous").tag(false)
-                    Text("Day").tag(true)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-                .help("Continuous timeline, or one day at a time")
-
-                if model.dayMode {
-                    TimelineDayNavigator(model: model)
-                }
-            }
-            .fixedSize(horizontal: true, vertical: false)
 
             TimelineToolbarSection {
                 Button(action: { zoom(by: 1 / zoomStep) }) {
@@ -675,14 +660,13 @@ struct TimelineUnifiedView: View {
         filterReload = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
-            preserveOpenedResultContextOnRefresh = false
             model.load()
         }
     }
 
     private func toggleCapture() {
         Task {
-            if appState.isCapturing || appState.isCaptureStarting {
+            if appState.isCaptureWanted {
                 await appState.stopCaptureIfNeeded()
             } else {
                 await appState.startCaptureIfNeeded()
@@ -744,8 +728,8 @@ struct TimelineUnifiedView: View {
 
     /// Applies the range as the search's dates and leaves the rest of the search to the user.
     private func searchInRange(_ range: TimelineRange) {
-        startDate = Date(timeIntervalSince1970: TimeInterval(range.fromMs) / 1000)
-        endDate = Date(timeIntervalSince1970: TimeInterval(range.toMs - 1) / 1000)
+        model.startMs = range.fromMs
+        model.endMs = range.toMs - 1
         rangeSelection.end()
         if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             applyFilters()

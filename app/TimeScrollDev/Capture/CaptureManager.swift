@@ -289,9 +289,7 @@ final class CaptureManager: NSObject {
 
 final class StreamDelegate: NSObject, SCStreamDelegate {
     func stream(_ stream: SCStream, didStopWithError error: Error) {
-        #if DEBUG
-        print("SCStream stopped with error:", error)
-        #endif
+        CaptureLog.logger.notice("Screen stream stopped: \(String(describing: error), privacy: .public)")
         // Without this the app keeps showing itself as recording after replayd crashes.
         let userStopped = (error as? SCStreamError)?.code == .userStopped
         Task { @MainActor in

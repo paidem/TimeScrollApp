@@ -35,8 +35,10 @@ final class AppState: ObservableObject {
     private var captureTransitionInProgress = false
     private var captureStopInProgress = false
     // Failed sources can stop running while the user still wants capture to resume.
-    private var captureRequested = false
-    private var streamRecoveryTask: Task<Void, Never>?
+    @Published private var captureRequested = false
+    private let screenRecovery = CaptureRetryLoop()
+    var isCaptureWanted: Bool { captureRequested }
+    var isCaptureRecovering: Bool { screenRecovery.isActive }
     private var displayChangeTask: Task<Void, Never>?
 
     func startCaptureIfNeeded() async {
@@ -53,7 +55,7 @@ final class AppState: ObservableObject {
         }
 
         let selection = CaptureModeSelection(defaults: .standard)
-        guard selection.hasAnyCaptureEnabled else { return }
+        guard selection.hasAnyCaptureEnabled else { captureRequested = false; return }
         captureRequested = true
 
         let screenPermissionGranted: Bool
@@ -89,6 +91,8 @@ final class AppState: ObservableObject {
                     guard captureLifecycleGeneration == generation else { return }
                     fputs("[Capture] Failed to start screen capture: \(error.localizedDescription)\n", stderr)
                     screenCaptureStatus = .failed(error.localizedDescription)
+                    CaptureLog.logger.error("Screen capture failed to start: \(String(describing: error), privacy: .public)")
+                    startScreenRecovery()
                 }
             } else {
                 screenCaptureStatus = .failed("Screen Recording permission is required.")
@@ -141,7 +145,7 @@ final class AppState: ObservableObject {
 
     func stopCaptureIfNeeded() async {
         captureRequested = false
-        streamRecoveryTask?.cancel()
+        screenRecovery.cancel()
         displayChangeTask?.cancel()
         await stopCapture()
     }
@@ -172,24 +176,24 @@ final class AppState: ObservableObject {
         guard isCapturing, !captureStopInProgress else { return }
         if userStopped {
             captureRequested = false
-            streamRecoveryTask?.cancel()
+            screenRecovery.cancel()
             Task { await stopCaptureIfNeeded() }
             return
         }
-        guard streamRecoveryTask == nil else { return }
-        streamRecoveryTask = Task {
-            defer { streamRecoveryTask = nil }
-            // launchd relaunches replayd, but that takes a few seconds.
-            for delay: UInt64 in [3, 10, 30, 60, 120] {
-                let generation = captureLifecycleGeneration
-                do {
-                    try await Task.sleep(nanoseconds: delay * 1_000_000_000)
-                } catch { return }
-                // Capture was stopped or restarted elsewhere in the meantime.
-                guard !Task.isCancelled, captureRequested, captureLifecycleGeneration == generation else { return }
-                await restartCaptureIfRunning()
-                if screenCaptureStatus.isRunning { return }
-            }
+        screenCaptureStatus = .failed("Screen capture stopped; retrying.")
+        startScreenRecovery()
+    }
+
+    private func startScreenRecovery() {
+        guard !screenRecovery.isActive else { return }
+        screenRecovery.start { [weak self] in
+            guard let self, self.captureRequested else { return true }
+            guard !self.captureTransitionInProgress else { return false }
+            if self.screenCaptureStatus.isRunning { return true }
+            await self.restartCaptureIfRunning()
+            return self.screenCaptureStatus.isRunning || !self.captureRequested
+                || !CaptureModeSelection(defaults: .standard).capturesScreen
+                || !Permissions.isScreenRecordingGranted()
         }
     }
 
@@ -278,7 +282,7 @@ final class AppState: ObservableObject {
 
     func shutdown() async {
         captureRequested = false
-        streamRecoveryTask?.cancel()
+        screenRecovery.cancel()
         displayChangeTask?.cancel()
         captureLifecycleGeneration &+= 1
         captureTransitionInProgress = true
