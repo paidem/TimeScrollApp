@@ -84,7 +84,6 @@ struct TimelineUnifiedView: View {
     var body: some View {
         VStack(spacing: 0) {
             topBar
-            TimelineDayControls(model: model)
             Divider()
             HStack(spacing: 0) {
                 centerStage
@@ -281,6 +280,9 @@ struct TimelineUnifiedView: View {
                     .frame(maxWidth: .infinity)
                     .submitLabel(.search)
                     .onSubmit { showResults() }
+
+                TimelineDayControls(model: model)
+                    .fixedSize()
 
                 Divider().frame(height: 22)
 

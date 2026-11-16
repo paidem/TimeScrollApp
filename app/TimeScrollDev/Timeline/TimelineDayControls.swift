@@ -14,9 +14,6 @@ struct TimelineDayControls: View {
             .fixedSize()
             .help("Continuous timeline, or one day at a time")
             if model.dayMode { TimelineDayNavigator(model: model) }
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 10)
-        .padding(.bottom, 8)
     }
 }
